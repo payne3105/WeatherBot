@@ -20,7 +20,7 @@ def welcome_message(message):
     button_weather = types.InlineKeyboardButton(text='Find Weather', callback_data='weather')
     markup.add(button_weather, button_help)
     bot.send_message(message.chat.id, f'Welcome to my weather bot, {message.from_user.first_name}!\n'
-                                      f'This bot allows you to find out the weather'
+                                      f'This bot allows you to find out the weather and forecast it'
                                       f' by typing your city.', reply_markup=markup)
 
 
@@ -34,6 +34,7 @@ def callback_help(callback):
     bot.send_message(callback.message.chat.id,
                      f'To restart the bot - /start\n'
                      f'To find out the weather - click button "Weather"\n'
+                     f'To forecast weather - click button "Forecast"\n'
                      f'You must type in your city in English, e.g. Moscow.\n'
                      f'Or allow getting your location by pressing button.\n'
                      f'To read help - click "Help"', reply_markup=markup)
@@ -68,10 +69,25 @@ def weather_by_location(message):
     temperature_feels = json.loads(weather_request.text)['main']['feels_like']  # Kelvin
     temperature_feels = float(temperature_feels) - 273.15  # Celsius
     city = json.loads(weather_request.text)['name']
+
+    forecast_request = requests.get(f'https://api.openweathermap.org/data/2.5/onecall?lat={message.location.latitude}'
+                                    f'&lon={message.location.longitude}'
+                                    f'&exclude=minutely,hourly,alerts,current&appid=e03ae7f775d48388005fd29386ae4fd7')
+    day_1_temperature = json.loads(forecast_request.text)['daily'][1]['temp']['day']
+    day_1_temperature = float(day_1_temperature) - 273.15
+    day_1_feels = json.loads(forecast_request.text)['daily'][1]['feels_like']['day']
+    day_1_feels = float(day_1_feels) - 273.15
+    day_1_main_info = json.loads(forecast_request.text)['daily'][1]['weather'][0]['main']
+    day_1_more_info = json.loads(forecast_request.text)['daily'][1]['weather'][0]['description']
+
     bot.send_message(message.chat.id, f'Weather for today: \n\n'
                                       f'{main_info}, {more_info}.\n'
                                       f'Temperature: {int(temperature)} °C\n'
-                                      f'Feels like: {int(temperature_feels)} °C\n'
+                                      f'Feels like: {int(temperature_feels)} °C\n\n'
+                                      f'Weather for tomorrow:\n\n'
+                                      f'{day_1_main_info}, {day_1_more_info}.\n'
+                                      f'Temperature: {int(day_1_temperature)} °C\n'
+                                      f'Feels like:{int(day_1_feels)} °C\n\n'
                                       f'Location: {city}')
 
 
@@ -103,6 +119,21 @@ def weather_by_city(message):
                                       f'Feels like: {int(temperature_feels)} °C\n'
                                       f'Location: {city}',
                      reply_markup=markup)
+
+
+# # Callback for forecast button
+# @bot.callback_query_handler(func=lambda callback: callback.data)
+# def callback_forecast(callback):
+#     markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, one_time_keyboard=True)
+#     button_location = types.KeyboardButton(text='Location 📍', request_location=True)
+#     markup.add(button_location)
+#     bot.send_message(callback.message.chat.id, 'Allow getting your location to forecast.',
+#                      reply_markup=markup)
+#
+
+# @bot.message_handler(content_types=['location'])
+# def weather_forecast_by_location(message):
+#     bot.send_message(message.chat.id, 'Forecast...')
 
 
 # Back to start
