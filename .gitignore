@@ -3,3 +3,6 @@
 
 #token
 private.py
+
+#location
+__pycache__
